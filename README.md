@@ -1,5 +1,5 @@
 # SquadRconTool
-This application was mainly created for the EquinoxGamers.com community.
+This application was mainly created for the EquinoxGamers.com community with plans to target the .NET platform. No I do not plan to make web based applications even though It would be easier.
 
 # Server Structure
 The server is planned to be built as an "interface" between an actual server, and the connected clients. Free software. Target build on .NET Core for cross-platform.
