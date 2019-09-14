@@ -2,7 +2,7 @@
 This application was mainly created for the EquinoxGamers.com community.
 
 # Server Structure
-The server is planned to be built as an "interface" between an actual server, and the connected clients. Free software.
+The server is planned to be built as an "interface" between an actual server, and the connected clients. Free software. Target build on .NET Core for cross-platform.
 Only the server knows the actual RCON password to the Squad server(s) therefore the application would provide the following features:
 * Authentication with a user / password combination given by a master administrator. (Server owner)
 * Permission system to control authenticated user's access.
