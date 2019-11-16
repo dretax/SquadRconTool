@@ -46,7 +46,7 @@ namespace SquadRconClient
                 // Add TLS 1.2
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
                 TCPClient.NoDelay = true;
-                var result = TCPClient.BeginConnect("127.0.0.1", 1234, null, null);
+                var result = TCPClient.BeginConnect("127.0.0.1", 12455, null, null);
                 bool success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                 if (success && TCPClient.Connected)
                 {
@@ -88,17 +88,23 @@ namespace SquadRconClient
             }
         }
         
-        public static bool ValidateCert(object sender, X509Certificate certificate, 
+        private static bool ValidateCert(object sender, X509Certificate certificate, 
             X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (sslPolicyErrors == SslPolicyErrors.None)
             {
-                Console.WriteLine("All good");
                 return true;
             }
-
-            Console.WriteLine("hehe error " + sslPolicyErrors);
-            return true;
+            
+            if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chain.ChainStatus.Length == 1)
+            {
+                if (chain.ChainStatus[0].StatusInformation.Contains(
+                    " A certificate chain processed, but terminated in a root certificate which is not trusted by the trust provider."))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         
     }

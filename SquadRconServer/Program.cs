@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
 using SquadRconServer.Permissions;
+using SquadRconServer.Tokens;
 
 namespace SquadRconServer
 {
@@ -38,10 +39,27 @@ namespace SquadRconServer
                         Logger.Log("Permissions reloaded.");
                         break;
                     case "adduser":
+                        Console.WriteLine("Please enter a username");
+                        string username = Console.ReadLine();
+                        Console.WriteLine("Please enter a password. I suggest generating one.");
+                        string password = Console.ReadLine();
+                        Console.WriteLine("Username: " + username);
+                        Console.WriteLine("Password: " + password);
+                        Console.WriteLine("Add user? (Y / N) Default permissions will be applied.");
+                        string ok = Console.ReadLine();
+                        if (ok != null && ok.ToLower() == "y")
+                        {
+                            PermissionLoader.AddUser(username, password);
+                            Console.WriteLine(username + " added. Edit permissions in the ini file, and reload.");
+                        }
                         break;
                     case "changepassword":
                         break;
                     case "removeuser":
+                        break;
+                    case "cleartokens":
+                        TokenHandler.ClearTokens();
+                        Logger.Log("Tokens cleared!");
                         break;
                     case "help":
                         break;
@@ -52,6 +70,11 @@ namespace SquadRconServer
             }
             Logger.Log("Press something to exit...");
             Console.ReadKey();
+        }
+
+        private static void DisplayHelp()
+        {
+            
         }
         
     }

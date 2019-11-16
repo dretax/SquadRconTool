@@ -7,11 +7,11 @@ namespace SquadRconServer.Tokens
 {
     internal static class TokenHandler
     {
-        private static readonly Dictionary<string, DateTime> Tokens = new Dictionary<string, DateTime>();
+        private static readonly Dictionary<string, TokenHolder> Tokens = new Dictionary<string, TokenHolder>();
         private static readonly char[] chars =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".ToCharArray();
         
-        private static string GetUniqueKey(int size)
+        internal static string GetUniqueKey(int size)
         {            
             byte[] data = new byte[4 * size];
             using (RNGCryptoServiceProvider crypto = new RNGCryptoServiceProvider())
@@ -30,10 +30,10 @@ namespace SquadRconServer.Tokens
             return result.ToString();
         }
 
-        internal static string AddNewToken(int size)
+        internal static string AddNewToken(string username, int size)
         {
             string key = GetUniqueKey(15);
-            Tokens.Add(key, DateTime.Now);
+            Tokens.Add(username, new TokenHolder(key, DateTime.Now));
             return key;
         }
 
@@ -42,16 +42,16 @@ namespace SquadRconServer.Tokens
             Tokens.Clear();
         }
 
-        internal static bool IsValidToken(string token)
+        internal static bool HasValidToken(string username)
         {
-            if (Tokens.ContainsKey(token))
+            if (Tokens.ContainsKey(username))
             {
-                var date = Tokens[token];
+                var token = Tokens[username];
                 var currentdate = DateTime.Now;
-                bool b = (currentdate - date).TotalHours >= 24;
-                if (b)
+                bool b = (currentdate - token.TokenDate).TotalHours <= Server.TokenValidTime;
+                if (!b)
                 {
-                    Tokens.Remove(token);
+                    Tokens.Remove(username);
                 }
 
                 return b;
