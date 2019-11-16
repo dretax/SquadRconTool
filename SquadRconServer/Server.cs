@@ -10,23 +10,26 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using SquadRconServer.Permissions;
+using SquadRconServer.Tokens;
 
 namespace SquadRconServer
 {
-    public class Server
+    internal class Server
     {
         private string _currentpath = Directory.GetCurrentDirectory();
-        private Regex _IPCheck = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
-        internal static readonly UTF8Encoding asen = new UTF8Encoding();
+        private readonly Regex _IPCheck = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
         private bool _running = true;
         internal IniParser Settings;
         internal string ListenIPAddress;
         internal int ListenPort;
-        internal int TokenValidTime = 24;
         internal string CertificatePassword;
         internal string IpsAndDomains;
         internal TcpListener TCPServer;
         internal X509Certificate2 Certificate;
+        
+        internal static string RegistrationSalt;
+        internal static int TokenValidTime = 24;
+        internal static readonly UTF8Encoding asen = new UTF8Encoding();
 
         public enum Codes
         {
@@ -165,6 +168,7 @@ namespace SquadRconServer
                     Settings.AddSetting("Settings", "TokenValidTime", "24");
                     Settings.AddSetting("Settings", "CertificatePassword", "ChangeMeAndDeleteCertificates");
                     Settings.AddSetting("Settings", "IpsAndDomains", "127.0.0.1,exampledomains.com");
+                    Settings.AddSetting("Settings", "RegistrationSalt", TokenHandler.GetUniqueKey(8));
                     Settings.Save();
                 }
                 Settings = new IniParser(_currentpath + "\\Settings.ini");
@@ -173,6 +177,7 @@ namespace SquadRconServer
                 TokenValidTime = int.Parse(Settings.GetSetting("Settings", "TokenValidTime"));
                 CertificatePassword = Settings.GetSetting("Settings", "CertificatePassword");
                 IpsAndDomains = Settings.GetSetting("Settings", "IpsAndDomains");
+                RegistrationSalt = Settings.GetSetting("Settings", "RegistrationSalt");
                 
                 return true;
             }
@@ -221,19 +226,19 @@ namespace SquadRconServer
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls;
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls11;
-                // Add TLS 1.2
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;;
+                // Add TLS 1.2, and 1.3
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls13;
                 NetworkStream stream = new NetworkStream(s);
                 SslStream ssl = new SslStream(stream, false);
-                //ssl.AuthenticateAsServer(Certificate, false, SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, 
-                //    true);
-                ssl.AuthenticateAsServer(Certificate, false, SslProtocols.Tls12, true);
+
+                ssl.AuthenticateAsServer(Certificate, false, SslProtocols.Tls12 | SslProtocols.Tls13, true);
                 while (s.Connected)
                 {
                     if (!ssl.CanRead && !stream.DataAvailable)
                     {
-                        s.Close();
-                        return;
+                        Thread.Sleep(100);
+                        continue;
                     }
 
                     byte[] leng = new byte[4];
@@ -333,7 +338,7 @@ namespace SquadRconServer
                         {
                             try
                             {
-                                if (otherdata.Length != 4)
+                                if (otherdata.Length != 3)
                                 {
                                     if (s.Connected)
                                     {
@@ -344,7 +349,7 @@ namespace SquadRconServer
 
                                 string name = otherdata[0].Substring(0, Math.Min(otherdata[0].Length, 50));
                                 string password = otherdata[1].Substring(0, Math.Min(otherdata[1].Length, 50));
-                                string version = otherdata[2].Substring(0, Math.Min(otherdata[1].Length, 10));
+                                string version = otherdata[2].Substring(0, Math.Min(otherdata[2].Length, 10));
 
                                 if (string.IsNullOrEmpty(name)
                                     || string.IsNullOrEmpty(password)
@@ -364,9 +369,8 @@ namespace SquadRconServer
                                     byte[] intBytes = BitConverter.GetBytes(messagebyte.Length);
                                     if (BitConverter.IsLittleEndian)
                                         Array.Reverse(intBytes);
-                                    s.Send(intBytes);
-                                    s.Send(messagebyte);
-                                    s.Close();
+                                    ssl.Write(intBytes);
+                                    ssl.Write(messagebyte);
                                 }
                             }
                             catch (Exception ex)
