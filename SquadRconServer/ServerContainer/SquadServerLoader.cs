@@ -18,7 +18,7 @@ namespace SquadRconServer.ServerContainer
             if (!File.Exists(_currentpath + "\\SquadServers.ini"))
             {
                 File.Create(_currentpath + "\\SquadServers.ini").Dispose();
-                SquadServersIni = new IniParser(_currentpath + "\\Permissions.ini");
+                SquadServersIni = new IniParser(_currentpath + "\\SquadServers.ini");
                 SquadServersIni.AddSetting("ServerName", "IpOrDomain", "127.0.0.1");
                 SquadServersIni.AddSetting("ServerName", "QueryPort", "27165");
                 SquadServersIni.AddSetting("ServerName", "RconPort", "21114");
