@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using SquadRconServer.Permissions;
+using SquadRconServer.ServerContainer;
 using SquadRconServer.Tokens;
 
 namespace SquadRconServer
@@ -17,7 +18,6 @@ namespace SquadRconServer
     internal class Server
     {
         private string _currentpath = Directory.GetCurrentDirectory();
-        private readonly Regex _IPCheck = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
         private bool _running = true;
         internal IniParser Settings;
         internal string ListenIPAddress;
@@ -30,6 +30,8 @@ namespace SquadRconServer
         internal static string RegistrationSalt;
         internal static int TokenValidTime = 24;
         internal static readonly UTF8Encoding asen = new UTF8Encoding();
+        internal static readonly Regex IPCheck = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
+        internal static readonly Regex DomainCheck = new Regex(@"(http[s]?:\/\/|[a-z]*\.[a-z]{3}\.[a-z]{2})([a-z]*\.[a-z]{3})|([a-z]*\.[a-z]*\.[a-z]{3}\.[a-z]{2})|([a-z]+\.[a-z]{3})");
 
         public enum Codes
         {
@@ -49,6 +51,7 @@ namespace SquadRconServer
 
             GenerateSelfSignedCertificate();
             
+            SquadServerLoader.LoadServers();
             PermissionLoader.LoadPermissions();
 
             IPAddress listenip = IPAddress.Any;
@@ -116,7 +119,7 @@ namespace SquadRconServer
             {
                 if (string.IsNullOrEmpty(x)) continue;
                 
-                if (_IPCheck.Match(x.Trim()).Success)
+                if (IPCheck.Match(x.Trim()).Success)
                 {
                     sanBuilder.AddIpAddress(IPAddress.Parse(x));
                 }
