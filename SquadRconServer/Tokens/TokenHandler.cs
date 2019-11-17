@@ -18,6 +18,7 @@ namespace SquadRconServer.Tokens
             {
                 crypto.GetBytes(data);
             }
+            
             StringBuilder result = new StringBuilder(size);
             for (int i = 0; i < size; i++)
             {
@@ -30,11 +31,19 @@ namespace SquadRconServer.Tokens
             return result.ToString();
         }
 
-        internal static string AddNewToken(string username, int size)
+        internal static string AddNewToken(string username)
         {
             string key = GetUniqueKey(15);
             Tokens.Add(username, new TokenHolder(key, DateTime.Now));
             return key;
+        }
+
+        internal static void RemoveToken(string username)
+        {
+            if (Tokens.ContainsKey(username))
+            {
+                Tokens.Remove(username);
+            }
         }
 
         internal static void ClearTokens()

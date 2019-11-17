@@ -18,26 +18,30 @@ namespace SquadRconServer.ServerContainer
             if (!File.Exists(_currentpath + "\\SquadServers.ini"))
             {
                 File.Create(_currentpath + "\\SquadServers.ini").Dispose();
-                SquadServersIni = new IniParser(_currentpath + "\\Permissions.ini");
+                SquadServersIni = new IniParser(_currentpath + "\\SquadServers.ini");
                 SquadServersIni.AddSetting("ServerName", "IpOrDomain", "127.0.0.1");
+                SquadServersIni.AddSettingComments("ServerName", "IpOrDomain", "Your Squad Server's IP, or Domain address goes here.");
                 SquadServersIni.AddSetting("ServerName", "QueryPort", "27165");
+                SquadServersIni.AddSettingComments("ServerName", "QueryPort", "The query port of this server.");
                 SquadServersIni.AddSetting("ServerName", "RconPort", "21114");
+                SquadServersIni.AddSettingComments("ServerName", "RconPort", "The rcon port of this server.");
                 SquadServersIni.AddSetting("ServerName", "RconPassword", "test");
+                SquadServersIni.AddSettingComments("ServerName", "RconPassword", "The rcon password of this server.");
                 SquadServersIni.Save();
             }
             SquadServersIni = new IniParser(_currentpath + "\\SquadServers.ini");
 
-            foreach (string x in SquadServersIni.Sections)
+            foreach (IniParser.IniSection x in SquadServersIni.Sections.Values)
             {
                 try
                 {
-                    string IpOrDomain = SquadServersIni.GetSetting(x, "IpOrDomain");
-                    string QueryPort = SquadServersIni.GetSetting(x, "QueryPort");
-                    string RconPort = SquadServersIni.GetSetting(x, "RconPort");
-                    string RconPassword = SquadServersIni.GetSetting(x, "RconPassword");
+                    string IpOrDomain = SquadServersIni.GetSetting(x.SectionName, "IpOrDomain");
+                    string QueryPort = SquadServersIni.GetSetting(x.SectionName, "QueryPort");
+                    string RconPort = SquadServersIni.GetSetting(x.SectionName, "RconPort");
+                    string RconPassword = SquadServersIni.GetSetting(x.SectionName, "RconPassword");
                     
-                    SquadServer server = new SquadServer(x, IpOrDomain, RconPort, QueryPort, RconPassword);
-                    AllServers[x] = server;
+                    SquadServer server = new SquadServer(x.SectionName, IpOrDomain, RconPort, QueryPort, RconPassword);
+                    AllServers[x.SectionName] = server;
                 }
                 catch (InvalidSquadServerException ex)
                 {
