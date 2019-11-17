@@ -6,4 +6,8 @@
         <UseWPF>true</UseWPF>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="MetroFramework" Version="1.2.0.3" />
+    </ItemGroup>
+
 </Project>
