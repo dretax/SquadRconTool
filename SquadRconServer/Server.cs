@@ -63,6 +63,14 @@ namespace SquadRconServer
                 }
             }
             
+            // Remove insecure protocols (SSL3, TLS 1.0, TLS 1.1)
+            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
+            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls;
+            ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls11;
+            // Add TLS 1.2, and 1.3
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls13;
+            
             TCPServer = new TcpListener(listenip, ListenPort);
             TCPServer.Start();
             Logger.Log("[TCPServer] Listening for incoming connections. IP: " + listenip + " Port: " + ListenPort);
@@ -218,6 +226,7 @@ namespace SquadRconServer
 
         private void HandleConnection(System.Net.Sockets.Socket s)
         {
+            User currentuser = null;
             try
             {
                 s.ReceiveTimeout = 0;
@@ -225,13 +234,6 @@ namespace SquadRconServer
                 s.NoDelay = true;
                 string ipr = s.RemoteEndPoint.ToString().Split(':')[0];
 
-                // Remove insecure protocols (SSL3, TLS 1.0, TLS 1.1)
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls;
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls11;
-                // Add TLS 1.2, and 1.3
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls13;
                 NetworkStream stream = new NetworkStream(s);
                 SslStream ssl = new SslStream(stream, false);
 
@@ -276,16 +278,12 @@ namespace SquadRconServer
                         Logger.Log("[Communication Error] General error. " + ipr + " " + ex);
                     }
 
-                    Console.WriteLine(leng.Length);
                     if (BitConverter.IsLittleEndian)
                     {
-                        Console.WriteLine("Reverse");
                         Array.Reverse(leng);
-                        Console.WriteLine(leng.Length);
                     }
 
                     int upcominglength = (BitConverter.ToInt32(leng, 0));
-                    Console.WriteLine(upcominglength);
                     if (upcominglength > 15000000 || upcominglength <= 0)
                     {
                         ssl.Flush();
@@ -347,6 +345,7 @@ namespace SquadRconServer
                                     {
                                         s.Close();
                                     }
+
                                     return;
                                 }
 
@@ -362,10 +361,27 @@ namespace SquadRconServer
                                     {
                                         s.Close();
                                     }
+
                                     return;
                                 }
-                                Logger.Log("[TCPServer] Incoming Authentication from " + ipr + " Name: " + name);
-                                
+
+                                bmsg = (int) Codes.Login + "@InvalidNameOrPassword";
+
+                                currentuser = PermissionLoader.GetUser(name);
+                                if (currentuser != null && !currentuser.IsLoggedIn &&
+                                    currentuser.PasswordCheck(password) && version == Program.Version)
+                                {
+                                    currentuser.Token = TokenHandler.AddNewToken(currentuser.UserName);
+                                    currentuser.IsLoggedIn = true;
+                                    bmsg = (int) Codes.Login + "@Success~" + currentuser.Token + "~" +
+                                           string.Join("~", SquadServerLoader.AllServers.Keys);
+                                    Logger.Log("[TCPServer] Authentication from " + ipr + " Name: " + name);
+                                }
+                                else
+                                {
+                                    Logger.Log("[TCPServer] Authentication failure from " + ipr + " Name: " + name);
+                                }
+
                                 if (s.Connected)
                                 {
                                     byte[] messagebyte = asen.GetBytes(bmsg);
@@ -374,6 +390,10 @@ namespace SquadRconServer
                                         Array.Reverse(intBytes);
                                     ssl.Write(intBytes);
                                     ssl.Write(messagebyte);
+                                    if (bmsg.Contains("InvalidNameOrPassword"))
+                                    {
+                                        s.Close();
+                                    }
                                 }
                             }
                             catch (Exception ex)
@@ -388,9 +408,22 @@ namespace SquadRconServer
             }
             catch (Exception ex)
             {
+                // Usually happens when the socket is disposed, and becomes null.
                 Logger.LogError("[HandleConnection] General Error: " + ex);
             }
+            finally
+            {
+                if (currentuser != null)
+                {
+                    if (currentuser.Token != null)
+                    {
+                        TokenHandler.RemoveToken(currentuser.Token);
+                    }
 
+                    currentuser.IsLoggedIn = false;
+                    currentuser.Token = null;
+                }
+            }
         }
         
         private byte[] ByteReader(int length, SslStream stream, System.Net.Sockets.Socket socket)

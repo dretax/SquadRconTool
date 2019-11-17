@@ -68,6 +68,17 @@ namespace SquadRconServer.Permissions
             return true;
         }
 
+        internal static User GetUser(string username)
+        {
+            username = username.ToLower();
+            if (AllUsers.ContainsKey(username))
+            {
+                return AllUsers[username];
+            }
+
+            return null;
+        }
+
         private static List<Permissions> ProcessPermissions(string permissions)
         {
             List<Permissions> perms = new List<Permissions>();

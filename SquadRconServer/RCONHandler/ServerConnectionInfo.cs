@@ -4,12 +4,11 @@ namespace SquadRconServer.RCONHandler
 {
     public class ServerConnectionInfo
     {
-        public ServerConnectionInfo(IPAddress serverIp, int serverRconPort, int serverQueryPort, string rconPassword, string adminDisplayName = "SquadRconServer Admin")
+        public ServerConnectionInfo(IPAddress serverIp, int serverRconPort, int serverQueryPort, string rconPassword)
         {
             ServerIP = serverIp;
             ServerRconPort = serverRconPort;
             RCONPassword = rconPassword;
-            AdminDisplayName = adminDisplayName;
             ServerQueryPort = serverQueryPort;
         }
 
@@ -35,17 +34,6 @@ namespace SquadRconServer.RCONHandler
         {
             get; 
             private set;
-        }
-        
-        public string AdminDisplayName 
-        { 
-            get;
-            private set;
-        }
-
-        public bool IsValid()
-        {
-            return this.ServerIP != null && this.ServerQueryPort != 0 && this.ServerRconPort != 0 && !string.IsNullOrEmpty(RCONPassword);
         }
     }
 }
