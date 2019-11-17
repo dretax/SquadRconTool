@@ -32,15 +32,15 @@ namespace SquadRconServer.Permissions
             }
             PermissionsIni = new IniParser(_currentpath + "\\Permissions.ini");
 
-            foreach (string x in PermissionsIni.Sections)
+            foreach (IniParser.IniSection x in PermissionsIni.Sections.Values)
             {
                 try
                 {
-                    string pwhash = PermissionsIni.GetSetting(x, "PasswordHash");
-                    string permissions = PermissionsIni.GetSetting(x, "Permissions");
+                    string pwhash = PermissionsIni.GetSetting(x.SectionName, "PasswordHash");
+                    string permissions = PermissionsIni.GetSetting(x.SectionName, "Permissions");
                     
-                    User user = new User(x, pwhash, ProcessPermissions(permissions));
-                    AllUsers[x] = user;
+                    User user = new User(x.SectionName, pwhash, ProcessPermissions(permissions));
+                    AllUsers[x.SectionName] = user;
                 }
                 catch (Exception ex)
                 {
