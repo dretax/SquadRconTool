@@ -35,8 +35,9 @@ namespace SquadRconServer
 
         public enum Codes
         {
+            Unknown = -1,
             Login = 0,
-            Unknown = 1
+            SelectServer = 1,
         }
 
         public Server()
@@ -403,12 +404,78 @@ namespace SquadRconServer
 
                             break;
                         }
+                        case Codes.SelectServer:
+                        {
+                            if (otherdata.Length != 2)
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            string token = otherdata[0].Substring(0, Math.Min(otherdata[0].Length, 50));
+                            string servername = otherdata[1].Substring(0, Math.Min(otherdata[1].Length, 50));
+
+                            if (string.IsNullOrEmpty(token)
+                                || string.IsNullOrEmpty(servername))
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            if (currentuser != null)
+                            {
+                                // If token is no longer valid, or doesn't equal with the current one something is wrong.
+                                if (currentuser.Token != token || !TokenHandler.HasValidToken(currentuser.UserName) || !currentuser.IsLoggedIn)
+                                {
+                                    if (s.Connected)
+                                    {
+                                        s.Close();
+                                    }
+                                    return;
+                                }
+
+                                // TODO: Send information regarding the server in json format.
+                                bmsg = (int) Codes.SelectServer + "=";
+                                if (s.Connected)
+                                {
+                                    byte[] messagebyte = asen.GetBytes(bmsg);
+                                    byte[] intBytes = BitConverter.GetBytes(messagebyte.Length);
+                                    if (BitConverter.IsLittleEndian)
+                                        Array.Reverse(intBytes);
+                                    ssl.Write(intBytes);
+                                    ssl.Write(messagebyte);
+                                }
+                            }
+                            else
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Usually happens when the socket is disposed, and becomes null.
+                if (ex is ObjectDisposedException)
+                {
+                    return;
+                }
+                
                 Logger.LogError("[HandleConnection] General Error: " + ex);
             }
             finally
