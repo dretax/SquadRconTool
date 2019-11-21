@@ -66,8 +66,8 @@ namespace QueryMaster.GameServer
                 {
                     packet.Body = Util.BytesToString(body, 0, body.Length - 3);
                 }
-                Console.WriteLine(packet.Body);
-                Console.WriteLine();
+                //Console.WriteLine(packet.Body);
+                //Console.WriteLine();
             }
             catch (Exception e)
             {
@@ -110,8 +110,8 @@ namespace QueryMaster.GameServer
                     else
                         packet.Body = Util.BytesToString(body, 0, body.Length);
                 }
-                Console.WriteLine(packet.Body);
-                Console.WriteLine();
+                //Console.WriteLine(packet.Body);
+                //Console.WriteLine();
             }
             catch (Exception e)
             {
