@@ -9,6 +9,7 @@ namespace SquadRconServer.ResponseProcessers
     public class PlayerListProcesser
     {
         private readonly List<SquadPlayer> _players = new List<SquadPlayer>();
+        private readonly List<SquadPlayer> _disconnectedplayers = new List<SquadPlayer>();
         
         /// <summary>
         /// A messy technique of substring is used to avoid | characters in the player's name.
@@ -24,10 +25,14 @@ namespace SquadRconServer.ResponseProcessers
             }
             
             string[] spl = input.Split("\n");
+            bool ProcessingDisconnectedPlayers = false;
+            
             foreach (var x in spl)
             {
                 if (string.IsNullOrEmpty(x) || x == "----- Active Players -----" || x == "----- Recently Disconnected Players [Max of 15] ----" || !x.Contains("|"))
                 {
+                    if (x == "----- Recently Disconnected Players [Max of 15] ----")
+                        ProcessingDisconnectedPlayers = true;
                     continue;
                 }
 
@@ -71,10 +76,19 @@ namespace SquadRconServer.ResponseProcessers
 
                 var regex = new Regex(Regex.Escape("Name: "));
                 name = regex.Replace(originalstring, "", 1);
-
+                name = name.Replace(Constants.AssistantSeparator, "");
+                name = name.Replace(Constants.MainSeparator, "");
+                
                 try
                 {
-                    _players.Add(new SquadPlayer(id, steamid, name, teamid, squadid));
+                    if (!ProcessingDisconnectedPlayers)
+                    {
+                        _players.Add(new SquadPlayer(id, steamid, name, teamid, squadid));
+                    }
+                    else
+                    {
+                        _disconnectedplayers.Add(new SquadPlayer(id, steamid, name, teamid, squadid));
+                    }
                 }
                 catch (InvalidSquadPlayerException ex)
                 {
@@ -86,6 +100,11 @@ namespace SquadRconServer.ResponseProcessers
         public List<SquadPlayer> Players
         {
             get { return _players; }
+        }
+        
+        public List<SquadPlayer> DisconnectedPlayers
+        {
+            get { return _disconnectedplayers; }
         }
     }
 }
