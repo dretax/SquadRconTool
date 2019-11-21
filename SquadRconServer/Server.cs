@@ -344,14 +344,14 @@ namespace SquadRconServer
                     }
 
                     string message = Encoding.UTF8.GetString(b, 0, b.Length);
-                    if (string.IsNullOrEmpty(message) || !message.Contains("@"))
+                    if (string.IsNullOrEmpty(message) || !message.Contains(Constants.MainSeparator))
                     {
                         ssl.Flush();
                         s.Close();
                         return;
                     }
 
-                    string[] split = message.Split('@');
+                    string[] split = message.Split(Constants.MainSeparator);
                     if (split.Length != 2 || string.IsNullOrEmpty(split[1]) || string.IsNullOrEmpty(split[0]))
                     {
                         s.Close();
@@ -375,7 +375,7 @@ namespace SquadRconServer
 
                     code = (Codes) intp;
 
-                    string[] otherdata = split[1].Split('~');
+                    string[] otherdata = split[1].Split(Constants.AssistantSeparator);
                     string bmsg = "";
                     switch (code)
                     {
@@ -409,7 +409,7 @@ namespace SquadRconServer
                                     return;
                                 }
 
-                                bmsg = (int) Codes.Login + "@InvalidNameOrPassword";
+                                bmsg = (int) Codes.Login + Constants.MainSeparator + "InvalidNameOrPassword";
 
                                 currentuser = PermissionLoader.GetUser(name);
                                 if (currentuser != null && !currentuser.IsLoggedIn &&
@@ -418,8 +418,8 @@ namespace SquadRconServer
                                     currentuser.Token = TokenHandler.AddNewToken(currentuser.UserName);
                                     currentuser.IsLoggedIn = true;
                                     // TODO: Only send authorized servers.
-                                    bmsg = (int) Codes.Login + "@Success~" + currentuser.Token + "~" +
-                                           string.Join("~", SquadServerLoader.AllServers.Keys);
+                                    bmsg = (int) Codes.Login + Constants.MainSeparator + "Success" + Constants.AssistantSeparator + currentuser.Token + Constants.AssistantSeparator +
+                                           string.Join(Constants.AssistantSeparator, SquadServerLoader.AllServers.Keys);
                                     Logger.Log("[TCPServer] Authentication from " + ipr + " Name: " + name);
                                 }
                                 else
@@ -486,15 +486,16 @@ namespace SquadRconServer
                                     return;
                                 }
                                 
-                                bmsg = (int) Codes.SelectServer + "=Unknown";
+                                bmsg = (int) Codes.SelectServer + Constants.MainSeparator + "Unknown";
                                 if (ValidServers.ContainsKey(servername))
                                 {
                                     string response = ValidServers[servername].GetPlayerList();
                                     try
                                     {
                                         PlayerListProcesser x = new PlayerListProcesser(response);
-                                        string serialized = JsonConvert.SerializeObject(x.Players);
-                                        bmsg = (int) Codes.SelectServer + "=" + serialized;
+                                        string players = JsonConvert.SerializeObject(x.Players);
+                                        string disconnectedplayers = JsonConvert.SerializeObject(x.DisconnectedPlayers);
+                                        bmsg = (int) Codes.SelectServer + Constants.MainSeparator + players + Constants.AssistantSeparator + disconnectedplayers;
                                     }
                                     catch (InvalidSquadPlayerListException ex)
                                     {
