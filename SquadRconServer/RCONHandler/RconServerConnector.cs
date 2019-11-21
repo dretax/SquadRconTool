@@ -11,8 +11,11 @@ namespace SquadRconServer.RCONHandler
         
         public bool Connect(ServerConnectionInfo connectionInfo)
         {
+            if (!connectionInfo.IsValid) return false;
+            
             this.serverConnectionInfo = connectionInfo;
-            this.squadServer = ServerQuery.GetServerInstance(EngineType.Source, new IPEndPoint(this.serverConnectionInfo.ServerIP, this.serverConnectionInfo.ServerRconPort));
+            this.squadServer = ServerQuery.GetServerInstance(EngineType.Source,
+                new IPEndPoint(this.serverConnectionInfo.ServerIP, this.serverConnectionInfo.ServerRconPort));
             return this.squadServer.GetControl(this.serverConnectionInfo.RCONPassword);
         }
 
@@ -21,6 +24,7 @@ namespace SquadRconServer.RCONHandler
             if (squadServer != null)
             {
                 this.squadServer.Dispose();
+                squadServer = null;
             }
         }
 

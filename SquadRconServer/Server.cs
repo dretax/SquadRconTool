@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -9,7 +11,12 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Newtonsoft.Json;
+using SquadRconLibrary.JsonSerializable;
+using SquadRconServer.Exceptions;
 using SquadRconServer.Permissions;
+using SquadRconServer.RCONHandler;
+using SquadRconServer.ResponseProcessers;
 using SquadRconServer.ServerContainer;
 using SquadRconServer.Tokens;
 
@@ -26,6 +33,7 @@ namespace SquadRconServer
         internal string IpsAndDomains;
         internal TcpListener TCPServer;
         internal X509Certificate2 Certificate;
+        internal Dictionary<string, RconServerConnector> ValidServers = new Dictionary<string, RconServerConnector>();
         
         internal static string RegistrationSalt;
         internal static int TokenValidTime = 24;
@@ -35,8 +43,9 @@ namespace SquadRconServer
 
         public enum Codes
         {
+            Unknown = -1,
             Login = 0,
-            Unknown = 1
+            SelectServer = 1,
         }
 
         public Server()
@@ -53,6 +62,7 @@ namespace SquadRconServer
             
             SquadServerLoader.LoadServers();
             PermissionLoader.LoadPermissions();
+            ValidateServers();
 
             IPAddress listenip = IPAddress.Any;
             if (ListenIPAddress.ToLower() != "any")
@@ -84,7 +94,41 @@ namespace SquadRconServer
             _running = false;
             TCPServer.Stop();
         }
+
+        /// <summary>
+        /// Tries to connect to every single configured server.
+        /// If one of them fails the Server will remove them from the list
+        /// so the client will not see It upon authorization.
+        /// </summary>
+        private void ValidateServers()
+        {
+            Logger.Log("Validating configured servers... Please stand by.");
+            List<string> invalidservers = new List<string>(SquadServerLoader.AllServers.Values.Count);
+            foreach (var x in SquadServerLoader.AllServers.Values)
+            {
+                RconServerConnector connector = new RconServerConnector();
+                ServerConnectionInfo info = new ServerConnectionInfo(x.DomainIPContainer.IP, x.RconPort, x.QueryPort, x.RconPassword);
+                if (!connector.Connect(info))
+                {
+                    invalidservers.Add(x.ServerNickName);
+                    Logger.Log("[ServerValidation] " + x.ServerNickName + " is invalid. Unable to connect, removing.");
+                }
+                else
+                {
+                    Logger.Log("[ServerValidation] " + x.ServerNickName + " is valid. Connection established.");
+                    ValidServers[x.ServerNickName] = connector;
+                }
+            }
+
+            foreach (var x in invalidservers.Where(x => SquadServerLoader.AllServers.ContainsKey(x)))
+            {
+                SquadServerLoader.AllServers.Remove(x);
+            }
+        }
         
+        /// <summary>
+        /// Generates a self signed certificate.
+        /// </summary>
         private void GenerateSelfSignedCertificate()
         {
             if (File.Exists(_currentpath + "\\SquadRconCertificate.pfx"))
@@ -373,6 +417,7 @@ namespace SquadRconServer
                                 {
                                     currentuser.Token = TokenHandler.AddNewToken(currentuser.UserName);
                                     currentuser.IsLoggedIn = true;
+                                    // TODO: Only send authorized servers.
                                     bmsg = (int) Codes.Login + "@Success~" + currentuser.Token + "~" +
                                            string.Join("~", SquadServerLoader.AllServers.Keys);
                                     Logger.Log("[TCPServer] Authentication from " + ipr + " Name: " + name);
@@ -403,12 +448,92 @@ namespace SquadRconServer
 
                             break;
                         }
+                        case Codes.SelectServer:
+                        {
+                            if (otherdata.Length != 2)
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            string token = otherdata[0].Substring(0, Math.Min(otherdata[0].Length, 50));
+                            string servername = otherdata[1].Substring(0, Math.Min(otherdata[1].Length, 50));
+
+                            if (string.IsNullOrEmpty(token)
+                                || string.IsNullOrEmpty(servername))
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            if (currentuser != null)
+                            {
+                                // If token is no longer valid, or doesn't equal with the current one something is wrong.
+                                if (currentuser.Token != token || !TokenHandler.HasValidToken(currentuser.UserName) || !currentuser.IsLoggedIn)
+                                {
+                                    if (s.Connected)
+                                    {
+                                        s.Close();
+                                    }
+                                    return;
+                                }
+                                
+                                bmsg = (int) Codes.SelectServer + "=Unknown";
+                                if (ValidServers.ContainsKey(servername))
+                                {
+                                    string response = ValidServers[servername].GetPlayerList();
+                                    try
+                                    {
+                                        PlayerListProcesser x = new PlayerListProcesser(response);
+                                        string serialized = JsonConvert.SerializeObject(x.Players);
+                                        bmsg = (int) Codes.SelectServer + "=" + serialized;
+                                    }
+                                    catch (InvalidSquadPlayerListException ex)
+                                    {
+                                        Logger.LogError("[PlayerListRequest Error] " + ex.Message);
+                                    }
+                                }
+                                
+                                if (s.Connected)
+                                {
+                                    byte[] messagebyte = asen.GetBytes(bmsg);
+                                    byte[] intBytes = BitConverter.GetBytes(messagebyte.Length);
+                                    if (BitConverter.IsLittleEndian)
+                                        Array.Reverse(intBytes);
+                                    ssl.Write(intBytes);
+                                    ssl.Write(messagebyte);
+                                }
+                            }
+                            else
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Usually happens when the socket is disposed, and becomes null.
+                if (ex is ObjectDisposedException)
+                {
+                    return;
+                }
+                
                 Logger.LogError("[HandleConnection] General Error: " + ex);
             }
             finally

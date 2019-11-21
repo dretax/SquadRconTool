@@ -35,5 +35,14 @@ namespace SquadRconServer.RCONHandler
             get; 
             private set;
         }
+
+        public bool IsValid
+        {
+            get
+            {
+                return ServerIP != null && ServerRconPort != 0 && ServerQueryPort != 0 &&
+                       !string.IsNullOrEmpty(RCONPassword);
+            }
+        }
     }
 }
