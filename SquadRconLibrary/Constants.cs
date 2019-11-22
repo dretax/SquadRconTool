@@ -1,6 +1,6 @@
-﻿namespace SquadRconServer
+﻿namespace SquadRconLibrary
 {
-    public class Constants
+    public static class Constants
     {
         public const string MainSeparator = "@@@@@@@@@@";
         public const string AssistantSeparator = "~~~~~~~~~~";
