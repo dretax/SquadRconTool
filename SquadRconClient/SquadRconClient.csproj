@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MetroFramework" Version="1.2.0.3" />
+      <ProjectReference Include="..\SquadRconLibrary\SquadRconLibrary.csproj" />
     </ItemGroup>
 
 </Project>

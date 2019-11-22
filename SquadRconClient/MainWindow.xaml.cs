@@ -17,6 +17,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using SquadRconLibrary.Compression;
+using SquadRconServer;
 
 namespace SquadRconClient
 {
@@ -57,29 +59,22 @@ namespace SquadRconClient
                     ssl.AuthenticateAsClient("127.0.0.1");
                     Console.WriteLine("wow22");
 
-                    string msg = (int) Codes.Login + "@"
+                    string msg = (int) Codes.Login + Constants.MainSeparator
                                                    + "DreTaX"
-                                                   + '~'
+                                                   + Constants.AssistantSeparator
                                                    + "test"
-                                                   + '~'
+                                                   + Constants.AssistantSeparator
                                                    + "1.0";
                     byte[] ba = asen.GetBytes(msg);
+                    ba = LZ4Compresser.Compress(ba);
+                    
                     byte[] intBytes = BitConverter.GetBytes(ba.Length);
                     Console.WriteLine(intBytes.Length);
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        int upcominglength = (BitConverter.ToInt32(intBytes, 0));
-                        Console.WriteLine("upcoming " + upcominglength);
-                        Array.Reverse(intBytes);
-                        upcominglength = (BitConverter.ToInt32(intBytes, 0));
-                        Console.WriteLine("upcoming " + upcominglength);
-                        Console.WriteLine(intBytes.Length);
-                    }
-
+                    
                     ssl.Write(intBytes, 0, intBytes.Length);
                     ssl.Flush();
                     ssl.Write(ba, 0, ba.Length);
-                    TCPClient.Close();
+                    //TCPClient.Close();
                 }
             }
             catch (Exception ex)
@@ -99,7 +94,7 @@ namespace SquadRconClient
             if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chain.ChainStatus.Length == 1)
             {
                 if (chain.ChainStatus[0].StatusInformation.Contains(
-                    " A certificate chain processed, but terminated in a root certificate which is not trusted by the trust provider."))
+                    "A certificate chain processed, but terminated in a root certificate which is not trusted by the trust provider."))
                 {
                     return true;
                 }
