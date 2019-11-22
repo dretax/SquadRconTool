@@ -8,8 +8,34 @@ namespace SquadRconServer.Permissions
 {
     internal enum Permissions
     {
-        Kick,
-        Ban,
+        AdminKick,
+        AdminBan,
+        AdminBroadcast,
+        AdminEndMatch,
+        AdminPauseMatch,
+        AdminUnpauseMatch,
+        AdminChangeMap,
+        AdminSetNextMap,
+        AdminSetMaxNumPlayers,
+        AdminSetServerPassword,
+        AdminSlomo,
+        AdminForceTeamChange,
+        AdminAlwaysValidPlacement,
+        AdminDisableVehicleClaiming,
+        AdminAllKitsAvailable,
+        AdminNetTestStart,
+        AdminNetTestStop,
+        AdminListDisconnectedPlayers,
+        TraceViewToggle,
+        AdminCreateVehicle,
+        AdminDemoteCommander,
+        AdminDisbandSquad,
+        AdminRemovePlayerFromSquad,
+        AdminWarn,
+        AdminForceNetUpdateOnClientSaturation,
+        AdminProfileServer,
+        AdminSetRaasSeed,
+        All,
         Unknown
     }
     

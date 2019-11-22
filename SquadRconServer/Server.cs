@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Newtonsoft.Json;
+using SquadRconLibrary.Compression;
 using SquadRconLibrary.JsonSerializable;
 using SquadRconServer.Exceptions;
 using SquadRconServer.Permissions;
@@ -219,11 +220,21 @@ namespace SquadRconServer
                     File.Create(_currentpath + "\\Settings.ini").Dispose();
                     Settings = new IniParser(_currentpath + "\\Settings.ini");
                     Settings.AddSetting("Settings", "ListenIPAddress", "Any");
+                    Settings.AddSettingComments("Settings", "ListenIPAddress", 
+                        "Any will default to all the available IP addresses that are assigned to the server. Specify IP if needed.");
                     Settings.AddSetting("Settings", "ListenPort", "12455");
+                    Settings.AddSettingComments("Settings", "ListenPort", "The port the TCP server will listen on.");
                     Settings.AddSetting("Settings", "TokenValidTime", "24");
+                    Settings.AddSettingComments("Settings", "TokenValidTime", "The hours until your token is valid after authentication using the client.");
                     Settings.AddSetting("Settings", "CertificatePassword", "ChangeMeAndDeleteCertificates");
+                    Settings.AddSettingComments("Settings", "CertificatePassword", "Change the default password and delete your pfx file after. Use a generated password.");
                     Settings.AddSetting("Settings", "IpsAndDomains", "127.0.0.1,exampledomains.com");
+                    Settings.AddSettingComments("Settings", "IpsAndDomains", 
+                        "The IPs and domains the certificate will be signed with. Ensure you give atleast one valid input.",
+                        "If you do not connect using one of the values through the client the certificate verification will fail.",
+                        "Usually this is the same as the ListenIPAddress value, or if ANY is specified, just specify every assigned domains and ips of your server.");
                     Settings.AddSetting("Settings", "RegistrationSalt", TokenHandler.GetUniqueKey(8));
+                    Settings.AddSettingComments("Settings", "RegistrationSalt", "Randomly generated salt for the password hash generation. No need to change this.");
                     Settings.Save();
                 }
                 Settings = new IniParser(_currentpath + "\\Settings.ini");
@@ -342,6 +353,8 @@ namespace SquadRconServer
                         s.Close();
                         return;
                     }
+
+                    b = LZ4Compresser.Decompress(b);
 
                     string message = Encoding.UTF8.GetString(b, 0, b.Length);
                     if (string.IsNullOrEmpty(message) || !message.Contains(Constants.MainSeparator))
