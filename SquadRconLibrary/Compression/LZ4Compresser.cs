@@ -5,7 +5,7 @@ namespace SquadRconLibrary.Compression
     /// <summary>
     /// LZ4Compressor used to compress and decompress data, such as byte arrays, using LZ4 compression algorithms.
     /// </summary>
-    public class LZ4Compresser
+    public static class LZ4Compresser
     {
         /// <summary>
         /// Compress byte array using LZ4 algorithm (LZ4.LZ4Codec.Encode).
