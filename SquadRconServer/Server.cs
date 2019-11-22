@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Newtonsoft.Json;
+using SquadRconLibrary;
 using SquadRconLibrary.Compression;
 using SquadRconLibrary.JsonSerializable;
 using SquadRconServer.Exceptions;
@@ -41,13 +42,6 @@ namespace SquadRconServer
         internal static readonly UTF8Encoding asen = new UTF8Encoding();
         internal static readonly Regex IPCheck = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
         internal static readonly Regex DomainCheck = new Regex(@"(http[s]?:\/\/|[a-z]*\.[a-z]{3}\.[a-z]{2})([a-z]*\.[a-z]{3})|([a-z]*\.[a-z]*\.[a-z]{3}\.[a-z]{2})|([a-z]+\.[a-z]{3})");
-
-        public enum Codes
-        {
-            Unknown = -1,
-            Login = 0,
-            SelectServer = 1,
-        }
 
         public Server()
         {
@@ -422,7 +416,7 @@ namespace SquadRconServer
                                     return;
                                 }
 
-                                bmsg = (int) Codes.Login + Constants.MainSeparator + "InvalidNameOrPassword";
+                                bmsg = MessageConnector.FormMessage(Codes.Login, "InvalidNameOrPassword");
 
                                 currentuser = PermissionLoader.GetUser(name);
                                 if (currentuser != null && !currentuser.IsLoggedIn &&
@@ -461,7 +455,7 @@ namespace SquadRconServer
 
                             break;
                         }
-                        case Codes.SelectServer:
+                        case Codes.RequestPlayers:
                         {
                             if (otherdata.Length != 2)
                             {
@@ -499,16 +493,17 @@ namespace SquadRconServer
                                     return;
                                 }
                                 
-                                bmsg = (int) Codes.SelectServer + Constants.MainSeparator + "Unknown";
+                                bmsg = MessageConnector.FormMessage(Codes.RequestPlayers, "Unknown");
                                 if (ValidServers.ContainsKey(servername))
                                 {
                                     string response = ValidServers[servername].GetPlayerList();
                                     try
                                     {
                                         PlayerListProcesser x = new PlayerListProcesser(response);
-                                        string players = JsonConvert.SerializeObject(x.Players);
-                                        string disconnectedplayers = JsonConvert.SerializeObject(x.DisconnectedPlayers);
-                                        bmsg = (int) Codes.SelectServer + Constants.MainSeparator + players + Constants.AssistantSeparator + disconnectedplayers;
+                                        string players = JsonParser.Serialize(x.Players);
+                                        string disconnectedplayers = JsonParser.Serialize(x.DisconnectedPlayers);
+                                        bmsg = MessageConnector.FormMessage(Codes.RequestPlayers, players,
+                                            disconnectedplayers);
                                     }
                                     catch (InvalidSquadPlayerListException ex)
                                     {
@@ -536,6 +531,75 @@ namespace SquadRconServer
                                 return;
                             }
 
+                            break;
+                        }
+                        case Codes.Disconnect:
+                        {
+                            if (otherdata.Length != 1)
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            string token = otherdata[0].Substring(0, Math.Min(otherdata[0].Length, 50));
+
+                            if (string.IsNullOrEmpty(token))
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+
+                            if (currentuser != null)
+                            {
+                                // If token is no longer valid, or doesn't equal with the current one something is wrong.
+                                if (currentuser.Token != token || !TokenHandler.HasValidToken(currentuser.UserName) || !currentuser.IsLoggedIn)
+                                {
+                                    if (s.Connected)
+                                    {
+                                        s.Close();
+                                    }
+                                    return;
+                                }
+                                
+                                if (currentuser.Token != null)
+                                {
+                                    TokenHandler.RemoveToken(currentuser.Token);
+                                }
+
+                                currentuser.IsLoggedIn = false;
+                                currentuser.Token = null;
+                                
+                                bmsg = (int) Codes.RequestPlayers + Constants.MainSeparator + "Ok";
+
+                                if (s.Connected)
+                                {
+                                    byte[] messagebyte = asen.GetBytes(bmsg);
+                                    byte[] intBytes = BitConverter.GetBytes(messagebyte.Length);
+                                    if (BitConverter.IsLittleEndian)
+                                        Array.Reverse(intBytes);
+                                    ssl.Write(intBytes);
+                                    ssl.Write(messagebyte);
+                                    s.Close();
+                                }
+                            }
+                            else
+                            {
+                                if (s.Connected)
+                                {
+                                    s.Close();
+                                }
+
+                                return;
+                            }
+                            
                             break;
                         }
                     }

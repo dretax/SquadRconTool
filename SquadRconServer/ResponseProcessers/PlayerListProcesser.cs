@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using SquadRconLibrary;
 using SquadRconLibrary.JsonSerializable;
 using SquadRconServer.Exceptions;
 
