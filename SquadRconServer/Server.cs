@@ -168,7 +168,7 @@ namespace SquadRconServer
                 
                 if (IPCheck.Match(x.Trim()).Success)
                 {
-                    sanBuilder.AddIpAddress(IPAddress.Parse(x));
+                    sanBuilder.AddIpAddress(IPAddress.Parse(x.Trim()));
                 }
                 else
                 {

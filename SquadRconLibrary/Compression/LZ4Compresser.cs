@@ -10,16 +10,16 @@ namespace SquadRconLibrary.Compression
         /// <summary>
         /// Compress byte array using LZ4 algorithm (LZ4.LZ4Codec.Encode).
         /// </summary>
-        /// <param name="input_buffer">The input byte array to compress.</param>
+        /// <param name="inputBuffer">The input byte array to compress.</param>
         /// <returns>The compressed version of the input byte array.</returns>
-        public static byte[] Compress(byte[] input_buffer)
+        public static byte[] Compress(byte[] inputBuffer)
         {
-            var inputBufferLength = input_buffer.Length;
+            var inputBufferLength = inputBuffer.Length;
             var inputBufferMaxLength = LZ4Codec.MaximumOutputSize(inputBufferLength);
             var outputBuffer = new byte[inputBufferMaxLength];
 
             var outputLength = LZ4Codec.Encode(
-                input_buffer, 0, input_buffer.Length,
+                inputBuffer, 0, inputBuffer.Length,
                 outputBuffer, 0, outputBuffer.Length
             );
 
@@ -35,16 +35,16 @@ namespace SquadRconLibrary.Compression
         /// <summary>
         /// Decompress byte array that was compressed with Compress method. Uses LZ4.LZ4Codec.Decode.
         /// </summary>
-        /// <param name="input_buffer">The input byte array to decompress.</param>
+        /// <param name="inputBuffer">The input byte array to decompress.</param>
         /// <returns>The decompressed version of the input byte array.</returns>
-        public static byte[] Decompress(byte[] input_buffer, int expected_length = -1)
+        public static byte[] Decompress(byte[] inputBuffer, int expectedLength = -1)
         {
-            var inputBufferLength = input_buffer.Length;
-            var inputBufferMaxLength = (expected_length != -1) ? expected_length : inputBufferLength * 255;
+            var inputBufferLength = inputBuffer.Length;
+            var inputBufferMaxLength = (expectedLength != -1) ? expectedLength : inputBufferLength * 255;
             var outputBuffer = new byte[inputBufferMaxLength];
 
             var outputLength = LZ4Codec.Decode(
-                input_buffer, 0, input_buffer.Length,
+                inputBuffer, 0, inputBuffer.Length,
                 outputBuffer, 0, inputBufferMaxLength
             );
 

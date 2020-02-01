@@ -47,7 +47,7 @@ namespace SquadRconServer.Permissions
 
         public bool HasPermission(Permissions permission)
         {
-            return _permissions.Contains(permission);
+            return _permissions.Contains(permission) || _permissions.Contains(Permissions.All);
         }
 
         internal void UpdatePermissions(List<Permissions> permissions)

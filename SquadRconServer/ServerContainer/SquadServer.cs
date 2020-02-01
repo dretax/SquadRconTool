@@ -40,7 +40,7 @@ namespace SquadRconServer.ServerContainer
             
             if (!int.TryParse(queryPort, out QueryPort))
             {
-                throw new InvalidSquadServerException("Invalid RconPort was given. " + queryPort);
+                throw new InvalidSquadServerException("Invalid QueryPort was given. " + queryPort);
             }
 
             _queryPort = QueryPort;

@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using SquadRconLibrary;
 using SquadRconLibrary.Compression;
 using SquadRconServer;
 
@@ -45,8 +46,9 @@ namespace SquadRconClient
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls;
                 ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls11;
-                // Add TLS 1.2
+                // Add TLS 1.2 and 1.3
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls13;
                 TCPClient.NoDelay = true;
                 var result = TCPClient.BeginConnect("127.0.0.1", 12455, null, null);
                 bool success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(10));
