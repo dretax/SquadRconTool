@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -35,54 +36,11 @@ namespace SquadRconClient
     public partial class MainWindow : Window
     {
         internal static readonly UTF8Encoding asen = new UTF8Encoding();
+        internal ServerChooser Chooser;
         
         public MainWindow()
         {
             InitializeComponent();
-            try
-            {
-                TcpClient TCPClient = new TcpClient();
-                // Remove insecure protocols (SSL3, TLS 1.0, TLS 1.1)
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls;
-                ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Tls11;
-                // Add TLS 1.2 and 1.3
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls13;
-                TCPClient.NoDelay = true;
-                var result = TCPClient.BeginConnect("127.0.0.1", 12455, null, null);
-                bool success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(10));
-                if (success && TCPClient.Connected)
-                {
-                    NetworkStream stream = TCPClient.GetStream();
-                    var ssl = new SslStream(stream, false,
-                        new RemoteCertificateValidationCallback(ValidateCert), null);
-                    Console.WriteLine("wow");
-                    ssl.AuthenticateAsClient("127.0.0.1");
-                    Console.WriteLine("wow22");
-
-                    string msg = (int) Codes.Login + Constants.MainSeparator
-                                                   + "DreTaX"
-                                                   + Constants.AssistantSeparator
-                                                   + "test"
-                                                   + Constants.AssistantSeparator
-                                                   + "1.0";
-                    byte[] ba = asen.GetBytes(msg);
-                    ba = LZ4Compresser.Compress(ba);
-                    
-                    byte[] intBytes = BitConverter.GetBytes(ba.Length);
-                    Console.WriteLine(intBytes.Length);
-                    
-                    ssl.Write(intBytes, 0, intBytes.Length);
-                    ssl.Flush();
-                    ssl.Write(ba, 0, ba.Length);
-                    //TCPClient.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
         }
         
         private static bool ValidateCert(object sender, X509Certificate certificate, 
@@ -103,6 +61,65 @@ namespace SquadRconClient
             }
             return false;
         }
-        
+
+        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            string ip = IPAddressBox.Text;
+            string port = PortBox.Text;
+            string username = UserNameBox.Text;
+            string password = PasswordBox.Password;
+            int PortNum;
+
+            if (string.IsNullOrEmpty(ip))
+            {
+                AutoClosingMessageBox.Show("IP Box MUST have a value.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(port))
+            {
+                AutoClosingMessageBox.Show("Port Box MUST have a value.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(username))
+            {
+                AutoClosingMessageBox.Show("UserName Box MUST have a value.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                AutoClosingMessageBox.Show("Password Box MUST have a value.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            bool isdomain = Uri.CheckHostName(ip) == UriHostNameType.Dns;
+            if (isdomain)
+            {
+                var addresses = Dns.GetHostAddresses(ip);
+                if (addresses.Length > 0)
+                {
+                    ip = addresses[0].ToString();
+                }
+            }
+            Match match = Regex.Match(ip, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}");
+
+            IPAddress addr;
+            if (!IPAddress.TryParse(ip, out addr) || !match.Success)
+            {
+                AutoClosingMessageBox.Show("The IP input is not an IP address.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (!int.TryParse(port, out PortNum))
+            {
+                AutoClosingMessageBox.Show("The Port input is not a number.", "Error", 3000, MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Chooser = new ServerChooser(addr, PortNum, username, password);
+            Chooser.Show();
+        }
     }
 }

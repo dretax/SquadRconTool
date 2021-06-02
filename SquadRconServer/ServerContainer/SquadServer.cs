@@ -10,6 +10,7 @@ namespace SquadRconServer.ServerContainer
         private readonly int _queryPort;
         private readonly string _rconPassword;
         private readonly string _serverNickName;
+        private bool _isvalid;
         
         public SquadServer(string serverNickName, string ip, string rconPort, string queryPort, string rconPassword)
         {

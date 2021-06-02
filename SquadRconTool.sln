@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadRconServer", "SquadRco
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadRconLibrary", "SquadRconLibrary\SquadRconLibrary.csproj", "{F265D32E-F909-4D0B-A030-4B72CE106299}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadRconServerAPI", "SquadRconServerAPI\SquadRconServerAPI.csproj", "{6212A2ED-F9CE-4062-9DFD-15AFAE0C5DA6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{F265D32E-F909-4D0B-A030-4B72CE106299}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F265D32E-F909-4D0B-A030-4B72CE106299}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F265D32E-F909-4D0B-A030-4B72CE106299}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6212A2ED-F9CE-4062-9DFD-15AFAE0C5DA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6212A2ED-F9CE-4062-9DFD-15AFAE0C5DA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6212A2ED-F9CE-4062-9DFD-15AFAE0C5DA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6212A2ED-F9CE-4062-9DFD-15AFAE0C5DA6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

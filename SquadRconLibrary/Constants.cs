@@ -4,5 +4,6 @@
     {
         public const string MainSeparator = "@@@@@@@@@@";
         public const string AssistantSeparator = "~~~~~~~~~~";
+        public const string Version = "1.0";
     }
 }
